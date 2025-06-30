@@ -1,20 +1,21 @@
-# Gunakan base image Node.js versi 18
-FROM node:18
+# Gunakan base image Node.js versi 22
+FROM node:22
 
-# Set direktori kerja di dalam container
+# Tetapkan direktori kerja di dalam container
 WORKDIR /usr/src/app
 
-# Salin package.json dan package-lock.json
+# Salin file package.json dan package-lock.json terlebih dahulu
+# Ini memanfaatkan cache Docker agar tidak install ulang jika tidak ada perubahan dependensi
 COPY package*.json ./
 
-# Install dependencies
+# Install semua dependensi
 RUN npm install
 
 # Salin sisa kode aplikasi
 COPY . .
 
-# Buka port 8080
+# Beri tahu Docker bahwa container akan berjalan di port 8080
 EXPOSE 8080
 
-# Perintah untuk menjalankan aplikasi
+# Perintah untuk menjalankan aplikasi saat container dimulai
 CMD [ "node", "index.js" ]

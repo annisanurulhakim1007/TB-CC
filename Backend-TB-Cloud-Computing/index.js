@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Data disimpan dalam array selama aplikasi berjalan
+// Middleware
+app.use(cors()); // Mengizinkan akses dari domain lain (frontend)
+app.use(express.json()); // Mem-parsing body request JSON
+
+// Data disimpan dalam array (in-memory)
 let todos = [
   {
     "id": 1,
@@ -13,15 +15,15 @@ let todos = [
     "description": "Mengerjakan tugas besar komputasi awan",
     "completed": false,
     "dueDate": "2025-06-25",
-    "createdAt": "2025-06-16T13:00:00Z"
+    "createdAt": new Date().toISOString()
   }
 ];
-let nextId = 2;
+let nextId = 2; // Untuk auto-increment ID to-do baru
 
-// Resource: http:domain/api
+// Router untuk semua endpoint di bawah resource /api
 const apiRouter = express.Router();
 
-// GET /api/todos: Mengambil seluruh data to-do 
+// Endpoint: GET /api/todos (Mengambil seluruh data to-do)
 apiRouter.get('/todos', (req, res) => {
   res.status(200).json({
     status: "success",
@@ -30,14 +32,15 @@ apiRouter.get('/todos', (req, res) => {
   });
 });
 
-// POST /api/todos: Menambahkan to-do baru 
+// Endpoint: POST /api/todos (Menambahkan to-do baru)
 apiRouter.post('/todos', (req, res) => {
   const { title, description, dueDate } = req.body;
 
+  // Validasi input
   if (!title || !description || !dueDate) {
     return res.status(400).json({
       status: "error",
-      message: "Title, description, dan dueDate wajib diisi"
+      message: "Properti title, description, dan dueDate wajib diisi"
     });
   }
 
@@ -51,20 +54,20 @@ apiRouter.post('/todos', (req, res) => {
   };
   todos.push(newTodo);
 
-  res.status(201).json({
+  res.status(201).json({ // 201 Created
     status: "success",
     message: "To-do baru berhasil ditambahkan",
     data: newTodo
   });
 });
 
-// GET /api/todos/:id: Mengambil detail to-do berdasarkan ID 
+// Endpoint: GET /api/todos/:id (Mengambil detail to-do berdasarkan ID)
 apiRouter.get('/todos/:id', (req, res) => {
   const todo = todos.find(t => t.id === parseInt(req.params.id));
   if (!todo) {
     return res.status(404).json({
       status: "error",
-      message: "To-do dengan ID tersebut tidak ditemukan"
+      message: "To-do dengan ID yang diberikan tidak ditemukan"
     });
   }
   res.status(200).json({
@@ -74,23 +77,23 @@ apiRouter.get('/todos/:id', (req, res) => {
   });
 });
 
-// PUT /api/todos/:id: Memperbarui to-do berdasarkan ID 
+// Endpoint: PUT /api/todos/:id (Memperbarui to-do berdasarkan ID)
 apiRouter.put('/todos/:id', (req, res) => {
   const todoIndex = todos.findIndex(t => t.id === parseInt(req.params.id));
   if (todoIndex === -1) {
     return res.status(404).json({
       status: "error",
-      message: "To-do dengan ID tersebut tidak ditemukan"
+      message: "To-do dengan ID yang diberikan tidak ditemukan"
     });
   }
 
-  const { title, description, completed, dueDate } = req.body;
+  // Ambil data yang ada dan perbarui dengan data baru jika ada
   const updatedTodo = {
     ...todos[todoIndex],
-    title: title || todos[todoIndex].title,
-    description: description || todos[todoIndex].description,
-    completed: typeof completed === 'boolean' ? completed : todos[todoIndex].completed,
-    dueDate: dueDate || todos[todoIndex].dueDate,
+    title: req.body.title || todos[todoIndex].title,
+    description: req.body.description || todos[todoIndex].description,
+    completed: typeof req.body.completed === 'boolean' ? req.body.completed : todos[todoIndex].completed,
+    dueDate: req.body.dueDate || todos[todoIndex].dueDate
   };
   todos[todoIndex] = updatedTodo;
 
@@ -101,13 +104,13 @@ apiRouter.put('/todos/:id', (req, res) => {
   });
 });
 
-// DELETE /api/todos/:id: Menghapus to-do berdasarkan ID 
+// Endpoint: DELETE /api/todos/:id (Menghapus to-do berdasarkan ID)
 apiRouter.delete('/todos/:id', (req, res) => {
   const todoIndex = todos.findIndex(t => t.id === parseInt(req.params.id));
   if (todoIndex === -1) {
     return res.status(404).json({
       status: "error",
-      message: "To-do dengan ID tersebut tidak ditemukan"
+      message: "To-do dengan ID yang diberikan tidak ditemukan"
     });
   }
   
@@ -115,13 +118,14 @@ apiRouter.delete('/todos/:id', (req, res) => {
   res.status(200).json({
     status: "success",
     message: "To-do berhasil dihapus",
-    data: null
+    data: null // Data bisa null karena objeknya sudah dihapus
   });
 });
 
+// Gunakan router untuk path /api
 app.use('/api', apiRouter);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`Server berjalan di port ${PORT}`);
+  console.log(`Server berjalan di http://localhost:${PORT}`);
 });
